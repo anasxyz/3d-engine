@@ -1,6 +1,5 @@
 #pragma once
 #include "Mesh.h"
-#include <vector>
 
 inline Mesh createCube(float size = 1.0f) {
     Mesh cube;
@@ -29,5 +28,4 @@ inline Mesh createCube(float size = 1.0f) {
     cube.setup(positions, colors, indices);
     return cube;
 }
-
 

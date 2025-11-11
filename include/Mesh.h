@@ -7,28 +7,6 @@
 
 using namespace glm;
 
-struct Transform {
-  vec3 position = vec3(0.0f);
-  vec3 rotation = vec3(0.0f);
-  vec3 scale = vec3(1.0f);
-
-  mat4 getMatrix() const {
-		// translation
-    mat4 m = translate(mat4(1.0f), position);
-
-		// rotation
-    m = rotate(m, rotation.x, vec3(1, 0, 0));
-    m = rotate(m, rotation.y, vec3(0, 1, 0));
-    m = rotate(m, rotation.z, vec3(0, 0, 1));
-
-		// scale
-		// for some reason can't do scale() without glm:: ??
-    m = glm::scale(m, scale);
-
-    return m;
-  }
-};
-
 class Mesh {
 public:
   GLuint vao;
@@ -36,8 +14,6 @@ public:
   GLuint vboColours = 0;
   GLuint eboIndices = 0;
   GLuint indexCount = 0;
-
-  Transform transform;
 
   Mesh() = default;
 
@@ -74,7 +50,7 @@ public:
     glBindVertexArray(0);
   }
 
-  void draw() {
+  void draw() const {
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
