@@ -90,13 +90,12 @@ void render() {
 }
 
 void init() {
-  program = glw->loadShader("shaders/lab2.vert", "shaders/lab2.frag");
+  program = glw->loadShader("shaders/vs.vert", "shaders/fs.frag");
 
   modelID = glGetUniformLocation(program, "model");
   viewID = glGetUniformLocation(program, "view");
   projectionID = glGetUniformLocation(program, "projection");
 
-  // Build the scene
   Mesh cube1 = createCube();
   cube1.transform.position = vec3(0.0f, 0.0f, -2.0f);
 
