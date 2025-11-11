@@ -5,7 +5,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
-#include <vector>
 
 using namespace glm;
 using namespace std;
@@ -14,7 +13,7 @@ GLuint program;
 GLuint modelID, viewID, projectionID;
 
 GLWrapper *glw;
-int windowWidth = 1024, windowHeight = 768;
+int windowWidth = 1024, windowHeight = 300;
 
 // camera
 vec3 cameraPos(0.0f, 0.0f, 3.0f);
@@ -119,7 +118,7 @@ void init() {
 
 int main() {
   try {
-    glw = new GLWrapper(windowWidth, windowHeight, "Scene Example");
+    glw = new GLWrapper(windowWidth, windowHeight, "Project");
 
     glw->setKeyCallback(
         [](GLFWwindow *window, int key, int scancode, int action, int mods) {

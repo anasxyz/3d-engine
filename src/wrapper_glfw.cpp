@@ -1,4 +1,3 @@
-
 #include "../include/GLFW/wrapper_glfw.h"
 #include <fstream>
 #include <iostream>
