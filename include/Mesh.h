@@ -12,13 +12,14 @@ public:
   GLuint vao;
   GLuint vboPositions = 0;
   GLuint vboColours = 0;
+  GLuint vboNormals = 0;
   GLuint eboIndices = 0;
   GLuint indexCount = 0;
 
   Mesh() = default;
 
   void setup(std::vector<GLfloat> &positions, std::vector<GLfloat> &colours,
-             std::vector<GLuint> &indices) {
+             std::vector<GLfloat> &normals, std::vector<GLuint> &indices) {
     indexCount = indices.size();
 
     glGenVertexArrays(1, &vao);
@@ -39,6 +40,14 @@ public:
                  colours.data(), GL_STATIC_DRAW);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, 0);
+
+    // normals
+    glGenBuffers(1, &vboNormals);
+    glBindBuffer(GL_ARRAY_BUFFER, vboNormals);
+    glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(GLfloat),
+                 normals.data(), GL_STATIC_DRAW);
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
     // indices
     glGenBuffers(1, &eboIndices);

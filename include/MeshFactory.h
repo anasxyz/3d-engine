@@ -33,6 +33,27 @@ inline Mesh createCube(float size = 1.0f) {
                                  0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1,
                                  1};
 
+  std::vector<GLfloat> normals;
+
+  // back face (0, 0, -1)
+  for (int i = 0; i < 4; ++i)
+    normals.insert(normals.end(), {0, 0, -1});
+  // front face (0, 0, 1)
+  for (int i = 0; i < 4; ++i)
+    normals.insert(normals.end(), {0, 0, 1});
+  // left face (-1, 0, 0)
+  for (int i = 0; i < 4; ++i)
+    normals.insert(normals.end(), {-1, 0, 0});
+  // right face (1, 0, 0)
+  for (int i = 0; i < 4; ++i)
+    normals.insert(normals.end(), {1, 0, 0});
+  // top face (0, 1, 0)
+  for (int i = 0; i < 4; ++i)
+    normals.insert(normals.end(), {0, 1, 0});
+  // bottom face (0, -1, 0)
+  for (int i = 0; i < 4; ++i)
+    normals.insert(normals.end(), {0, -1, 0});
+
   std::vector<GLuint> indices = {
       0,  1,  2,  2,  3,  0,  // back
       4,  5,  6,  6,  7,  4,  // front
@@ -42,7 +63,7 @@ inline Mesh createCube(float size = 1.0f) {
       20, 21, 22, 22, 23, 20  // bottom
   };
 
-  cube.setup(positions, colors, indices);
+  cube.setup(positions, colors, normals, indices);
   return cube;
 }
 
@@ -55,7 +76,7 @@ inline Mesh createSphere(float radius = 1.0f, int stacks = 16,
   if (slices < 3)
     slices = 3;
 
-  std::vector<GLfloat> positions; 
+  std::vector<GLfloat> positions;
   std::vector<GLfloat> colors;
   std::vector<GLfloat> normals;
   std::vector<GLuint> indices;
@@ -69,7 +90,7 @@ inline Mesh createSphere(float radius = 1.0f, int stacks = 16,
 
     for (int j = 0; j < slices; ++j) {
       float u = (float)j / (float)slices;
-      float theta = glm::two_pi<float>() * u; 
+      float theta = glm::two_pi<float>() * u;
 
       float x = radius * sinPhi * cos(theta);
       float y = radius * cosPhi;
@@ -87,8 +108,9 @@ inline Mesh createSphere(float radius = 1.0f, int stacks = 16,
       normals.push_back(n.y);
       normals.push_back(n.z);
 
-      // color 
-			// derived from normal which should be continous across the seam now (i think)
+      // color
+      // derived from normal which should be continous across the seam now (i
+      // think)
       glm::vec3 color = (n * 0.5f) + glm::vec3(0.5f);
       colors.push_back(color.r);
       colors.push_back(color.g);
@@ -98,7 +120,7 @@ inline Mesh createSphere(float radius = 1.0f, int stacks = 16,
   }
 
   // incides
-	// use modulo to wrap around the longitude seam properly
+  // use modulo to wrap around the longitude seam properly
   for (int i = 0; i < stacks; ++i) {
     for (int j = 0; j < slices; ++j) {
       int nextJ = (j + 1) % slices;
@@ -120,7 +142,7 @@ inline Mesh createSphere(float radius = 1.0f, int stacks = 16,
     }
   }
 
-  sphere.setup(positions, colors, indices);
+  sphere.setup(positions, colors, normals, indices);
 
   return sphere;
 }
