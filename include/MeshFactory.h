@@ -146,3 +146,69 @@ inline Mesh createSphere(float radius = 1.0f, int stacks = 16,
 
   return sphere;
 }
+
+inline Mesh createTorus(float majorRadius = 1.0f, float minorRadius = 0.5f,
+                        int majorSegments = 32, int minorSegments = 16) {
+  Mesh torus;
+
+  std::vector<GLfloat> positions;
+  std::vector<GLfloat> normals;
+  std::vector<GLfloat> colors;
+  std::vector<GLuint> indices;
+
+  for (int i = 0; i <= majorSegments; ++i) {
+    float u = (float)i / majorSegments;
+    float theta = glm::two_pi<float>() * u;
+    float cosTheta = cos(theta);
+    float sinTheta = sin(theta);
+
+    for (int j = 0; j <= minorSegments; ++j) {
+      float v = (float)j / minorSegments;
+      float phi = glm::two_pi<float>() * v;
+      float cosPhi = cos(phi);
+      float sinPhi = sin(phi);
+
+      // position
+      float x = (majorRadius + minorRadius * cosPhi) * cosTheta;
+      float y = minorRadius * sinPhi;
+      float z = (majorRadius + minorRadius * cosPhi) * sinTheta;
+      positions.push_back(x);
+      positions.push_back(y);
+      positions.push_back(z);
+      positions.push_back(1.0f);
+
+      // normal
+      glm::vec3 center =
+          glm::vec3(majorRadius * cosTheta, 0, majorRadius * sinTheta);
+      glm::vec3 n = glm::normalize(glm::vec3(x, y, z) - center);
+      normals.push_back(n.x);
+      normals.push_back(n.y);
+      normals.push_back(n.z);
+
+      // color (white for lighting)
+      colors.push_back(1.0f);
+      colors.push_back(1.0f);
+      colors.push_back(1.0f);
+      colors.push_back(1.0f);
+    }
+  }
+
+  // indices
+  for (int i = 0; i < majorSegments; ++i) {
+    for (int j = 0; j < minorSegments; ++j) {
+      int first = i * (minorSegments + 1) + j;
+      int second = first + minorSegments + 1;
+
+      indices.push_back(first);
+      indices.push_back(second);
+      indices.push_back(first + 1);
+
+      indices.push_back(second);
+      indices.push_back(second + 1);
+      indices.push_back(first + 1);
+    }
+  }
+
+  torus.setup(positions, colors, normals, indices);
+  return torus;
+}
