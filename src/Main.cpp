@@ -37,7 +37,9 @@ Scene scene;
 float rotSpeedX = 0.01f;
 float rotSpeedY = 0.01f;
 
-void updateCamera(GLFWwindow *window) {
+void updateCamera() {
+  GLFWwindow *window = glw->window();
+
   float moveSpeed = 0.03f;
   float rotSpeed = 1.0f;
 
@@ -71,6 +73,8 @@ void updateCamera(GLFWwindow *window) {
 }
 
 void render() {
+  GLFWwindow *window = glw->window();
+
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -103,7 +107,8 @@ void render() {
   scene.draw(modelId);
 
   glUseProgram(0);
-  updateCamera(glw->window());
+
+  updateCamera();
 }
 
 void init() {
@@ -125,11 +130,12 @@ void init() {
   // create cube meshes
   Mesh cubeMesh = createCube();
   Mesh sphereMesh = createSphere();
-	Mesh torusMesh = createTorus();
+  Mesh torusMesh = createTorus();
 
   // create scene objects
   auto cube1 = scene.createObject("Cube1", cubeMesh);
   cube1->transform.position = vec3(0.0f, 0.0f, -2.0f);
+  cube1->transform.scale = vec3(0.5f, 0.3f, 0.5f);
 
   auto torus1 = scene.createObject("Torus1", torusMesh);
   torus1->transform.position = vec3(2.0f, 1.0f, -4.0f);
