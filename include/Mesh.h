@@ -13,13 +13,15 @@ public:
   GLuint vboPositions = 0;
   GLuint vboColours = 0;
   GLuint vboNormals = 0;
+  GLuint vboTexCoords = 0;
   GLuint eboIndices = 0;
   GLuint indexCount = 0;
 
   Mesh() = default;
 
   void setup(std::vector<GLfloat> &positions, std::vector<GLfloat> &colours,
-             std::vector<GLfloat> &normals, std::vector<GLuint> &indices) {
+             std::vector<GLfloat> &normals, std::vector<GLuint> &indices,
+             std::vector<GLfloat> *texCoords = nullptr) {
     indexCount = indices.size();
 
     glGenVertexArrays(1, &vao);
@@ -48,6 +50,16 @@ public:
                  normals.data(), GL_STATIC_DRAW);
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+    // texture coordinates if provided
+    if (texCoords && !texCoords->empty()) {
+      glGenBuffers(1, &vboTexCoords);
+      glBindBuffer(GL_ARRAY_BUFFER, vboTexCoords);
+      glBufferData(GL_ARRAY_BUFFER, texCoords->size() * sizeof(GLfloat),
+                   texCoords->data(), GL_STATIC_DRAW);
+      glEnableVertexAttribArray(3);
+      glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    }
 
     // indices
     glGenBuffers(1, &eboIndices);
