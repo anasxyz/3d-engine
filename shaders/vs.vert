@@ -1,11 +1,12 @@
-// Vertex shader with a model transformation uniform
-
 #version 420 core
 
 layout(location = 0) in vec4 position;
 layout(location = 1) in vec4 colour;
+layout(location = 2) in vec3 normal;
 
-out vec4 fcolour;
+out vec4 fragColour;
+out vec3 fragNormal;
+out vec3 fragPosition;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -15,6 +16,8 @@ void main()
 {
 	gl_Position = projection * view * model * position;
 
-	fcolour = colour;
-	// fcolour = position * 2.0 + vec4(0.5, 0.5, 0.5, 1.0);
+	fragNormal = mat3(transpose(inverse(model))) * normal;
+	fragPosition = vec3(model * position);
+
+	fragColour = colour;
 }
