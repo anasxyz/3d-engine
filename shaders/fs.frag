@@ -14,7 +14,7 @@ uniform float specularStrength;
 uniform float shininess;
 
 void main() {
-  vec3 objectColour = vec3(fragColour.rgb);
+  vec3 objectColour = vec3(0.7, 0.7, 0.75);
 
   vec3 N = normalize(fragNormal);
   vec3 L = normalize(lightPosition - fragPosition);
@@ -30,7 +30,7 @@ void main() {
 
 	// specular
   float spec = pow(max(dot(V, R), 0.0), shininess);
-  vec3 specular = spec * lightColour;
+  vec3 specular = specularStrength * spec * lightColour;
 
 	// all together
   vec3 result = (ambient + diffuse + specular) * objectColour;

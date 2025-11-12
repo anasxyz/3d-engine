@@ -67,8 +67,8 @@ inline Mesh createCube(float size = 1.0f) {
   return cube;
 }
 
-inline Mesh createSphere(float radius = 1.0f, int stacks = 16,
-                         int slices = 32) {
+inline Mesh createSphere(float radius = 1.0f, int stacks = 32,
+                         int slices = 64) {
   Mesh sphere;
 
   if (stacks < 2)
@@ -148,7 +148,7 @@ inline Mesh createSphere(float radius = 1.0f, int stacks = 16,
 }
 
 inline Mesh createTorus(float majorRadius = 1.0f, float minorRadius = 0.5f,
-                        int majorSegments = 32, int minorSegments = 16) {
+                        int majorSegments = 64, int minorSegments = 32) {
   Mesh torus;
 
   std::vector<GLfloat> positions;

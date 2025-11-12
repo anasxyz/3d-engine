@@ -14,7 +14,7 @@ GLuint modelId, viewId, projectionId, lightPositionId, viewPositionId,
     lightColourId, ambientStrengthId, specularStrengthId, shininessId;
 
 GLWrapper *glw;
-int windowWidth = 1024, windowHeight = 300;
+int windowWidth = 1024, windowHeight = 768;
 
 // camera
 vec3 cameraPos(0.0f, 0.0f, 3.0f);
@@ -27,8 +27,8 @@ float camPitch = 0.0f;
 vec3 lightPosition(2.0f, 2.0f, 2.0f);
 vec3 lightColour(1.0f, 1.0f, 1.0f); // white
 float ambientStrength = 0.1f;
-float shininess = 32.0f;
-float specularStrength = 0.5f;
+float shininess = 8.0f;
+float specularStrength = 0.1f;
 
 // scene
 Scene scene;
