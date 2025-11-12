@@ -10,7 +10,8 @@ using namespace glm;
 using namespace std;
 
 GLuint program;
-GLuint modelID, viewID, projectionID;
+GLuint modelId, viewId, projectionId, lightPositionId, viewPositionId,
+    lightColourId, ambientStrengthId, specularStrengthId, shininessId;
 
 GLWrapper *glw;
 int windowWidth = 1024, windowHeight = 300;
@@ -21,6 +22,13 @@ vec3 cameraFront(0.0f, 0.0f, -1.0f);
 vec3 cameraUp(0.0f, 1.0f, 0.0f);
 float camYaw = -90.0f;
 float camPitch = 0.0f;
+
+// lighting
+vec3 lightPosition(2.0f, 2.0f, 2.0f);
+vec3 lightColour(1.0f, 1.0f, 1.0f); // white
+float ambientStrength = 0.1f;
+float shininess = 32.0f;
+float specularStrength = 0.5f;
 
 // scene
 Scene scene;
@@ -75,8 +83,15 @@ void render() {
   mat4 projection = perspective(radians(45.0f), aspect, 0.1f, 100.0f);
   mat4 view = lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 
-  glUniformMatrix4fv(viewID, 1, GL_FALSE, &view[0][0]);
-  glUniformMatrix4fv(projectionID, 1, GL_FALSE, &projection[0][0]);
+  glUniformMatrix4fv(viewId, 1, GL_FALSE, &view[0][0]);
+  glUniformMatrix4fv(projectionId, 1, GL_FALSE, &projection[0][0]);
+
+  glUniform3fv(lightPositionId, 1, &lightPosition[0]);
+  glUniform3fv(viewPositionId, 1, &cameraPos[0]);
+  glUniform3fv(lightColourId, 1, &lightColour[0]);
+  glUniform1f(ambientStrengthId, ambientStrength);
+  glUniform1f(shininessId, shininess);
+  glUniform1f(specularStrengthId, specularStrength);
 
   // animate rotation
   for (auto &obj : scene.objects) {
@@ -85,7 +100,7 @@ void render() {
   }
 
   // draw all objects
-  scene.draw(modelID);
+  scene.draw(modelId);
 
   glUseProgram(0);
   updateCamera(glw->window());
@@ -96,13 +111,20 @@ void init() {
   program = glw->loadShader("shaders/vs.vert", "shaders/fs.frag");
 
   // uniform locations
-  modelID = glGetUniformLocation(program, "model");
-  viewID = glGetUniformLocation(program, "view");
-  projectionID = glGetUniformLocation(program, "projection");
+  modelId = glGetUniformLocation(program, "model");
+  viewId = glGetUniformLocation(program, "view");
+  projectionId = glGetUniformLocation(program, "projection");
+
+  lightPositionId = glGetUniformLocation(program, "lightPosition");
+  viewPositionId = glGetUniformLocation(program, "viewPosition");
+  lightColourId = glGetUniformLocation(program, "lightColour");
+  ambientStrengthId = glGetUniformLocation(program, "ambientStrength");
+  specularStrengthId = glGetUniformLocation(program, "specularStrength");
+  shininessId = glGetUniformLocation(program, "shininess");
 
   // create cube meshes
   Mesh cubeMesh = createCube();
-	Mesh sphereMesh = createSphere();
+  Mesh sphereMesh = createSphere();
 
   // create scene objects
   auto cube1 = scene.createObject("Cube1", cubeMesh);
