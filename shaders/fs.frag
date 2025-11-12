@@ -4,7 +4,12 @@
 
 in vec4 fcolour;
 out vec4 outputColor;
+
+uniform float ambientStrength = 0.1;
+uniform vec3 lightColour = vec3(1.0, 1.0, 1.0);
+
 void main()
 {
-	outputColor = fcolour;
+	vec3 ambient = ambientStrength * lightColour;
+	outputColor = vec4(ambient, 1.0);
 }
