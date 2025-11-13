@@ -4,7 +4,6 @@
 #include "../include/GLFW/wrapper_glfw.h"
 #include "../include/MeshFactory.h"
 #include "../include/Scene.h"
-#include "../include/ModelLoader.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -59,7 +58,7 @@ void updateCamera() {
   if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
     camPitch -= rotSpeed;
 
-  camPitch = glm::clamp(camPitch, -89.0f, 89.0f);
+  camPitch = clamp(camPitch, -89.0f, 89.0f);
 
   vec3 front;
   front.x = cos(radians(camYaw)) * cos(radians(camPitch));
@@ -183,17 +182,10 @@ void init() {
   Mesh sphereMesh = createSphere();
   Mesh torusMesh = createTorus();
 
-  // load model
-  Mesh carMesh = ModelLoader::loadMesh("assets/models/Chevrolet_Camaro_SS_High.obj");
-
-  auto car = scene.createObject("Car", carMesh);
-  car->transform.position = vec3(0, 0, -5);
-  car->transform.scale = vec3(0.2f);
-
   crateTex = loadTexture("assets/textures/crate.png");
   std::cout << "crateTex: " << crateTex << std::endl;
-  globeTex = loadTexture("assets/textures/globe.jpg");
-  std::cout << "globeTex: " << globeTex << std::endl;
+	globeTex = loadTexture("assets/textures/globe.jpg");
+	std::cout << "globeTex: " << globeTex << std::endl;
 
   // create scene objects
   auto cube1 = scene.createObject("Cube1", cubeMesh);
@@ -204,12 +196,12 @@ void init() {
   auto torus1 = scene.createObject("Torus1", torusMesh);
   torus1->transform.position = vec3(2.0f, 1.0f, -4.0f);
   torus1->transform.scale = vec3(0.5f);
-  torus1->textureId = crateTex;
+	torus1->textureId = crateTex;
 
   auto sphere1 = scene.createObject("Sphere1", sphereMesh);
   sphere1->transform.position = vec3(-2.0f, -1.0f, -3.0f);
   sphere1->transform.scale = vec3(0.8f);
-  sphere1->textureId = globeTex;
+	sphere1->textureId = globeTex;
 }
 
 int main() {
