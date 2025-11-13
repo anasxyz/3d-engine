@@ -1,11 +1,14 @@
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <iostream>
+
+#include "../include/glad/glad.h"
+
+#include "../include/Camera.h"
 #include "../include/GLFW/wrapper_glfw.h"
 #include "../include/MeshFactory.h"
 #include "../include/Scene.h"
 #include "../include/TextureLoader.h"
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <iostream>
 
 using namespace glm;
 using namespace std;
@@ -23,11 +26,7 @@ GLWrapper *glw;
 int windowWidth = 1024, windowHeight = 768;
 
 // camera
-vec3 cameraPos(0.0f, 0.0f, 3.0f);
-vec3 cameraFront(0.0f, 0.0f, -1.0f);
-vec3 cameraUp(0.0f, 1.0f, 0.0f);
-float camYaw = -90.0f;
-float camPitch = 0.0f;
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
 // lighting
 vec3 lightPosition(10.0f, 2.0f, 2.0f);
@@ -43,52 +42,17 @@ Scene scene;
 float rotSpeedX = 0.01f;
 float rotSpeedY = 0.01f;
 
-void updateCamera() {
-  GLFWwindow *window = glw->window();
-
-  float moveSpeed = 0.03f;
-  float rotSpeed = 1.0f;
-
-  // camera rotation
-  if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-    camYaw -= rotSpeed;
-  if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-    camYaw += rotSpeed;
-  if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-    camPitch += rotSpeed;
-  if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-    camPitch -= rotSpeed;
-
-  camPitch = clamp(camPitch, -89.0f, 89.0f);
-
-  vec3 front;
-  front.x = cos(radians(camYaw)) * cos(radians(camPitch));
-  front.y = sin(radians(camPitch));
-  front.z = sin(radians(camYaw)) * cos(radians(camPitch));
-  cameraFront = normalize(front);
-
-  // movement
-  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-    cameraPos += moveSpeed * cameraFront;
-  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-    cameraPos -= moveSpeed * cameraFront;
-  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-    cameraPos -= normalize(cross(cameraFront, cameraUp)) * moveSpeed;
-  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-    cameraPos += normalize(cross(cameraFront, cameraUp)) * moveSpeed;
-}
-
 void updateObjectMovement(Object &obj) {
   GLFWwindow *window = glw->window();
 
-	if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
-		obj.transform.rotation.x += rotSpeedX;
-	if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
-		obj.transform.rotation.x -= rotSpeedX;
-	if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
-		obj.transform.rotation.y += rotSpeedY;
-	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
-		obj.transform.rotation.y -= rotSpeedY;
+  if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
+    obj.transform.rotation.x += rotSpeedX;
+  if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
+    obj.transform.rotation.x -= rotSpeedX;
+  if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
+    obj.transform.rotation.y += rotSpeedY;
+  if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
+    obj.transform.rotation.y -= rotSpeedY;
 }
 
 void render() {
@@ -97,20 +61,27 @@ void render() {
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  glfwGetFramebufferSize(glw->window(), &windowWidth, &windowHeight);
+  glfwGetFramebufferSize(window, &windowWidth, &windowHeight);
   glViewport(0, 0, windowWidth, windowHeight);
 
   glUseProgram(program);
 
+  // projection
   float aspect = (float)windowWidth / (float)windowHeight;
-  mat4 projection = perspective(radians(45.0f), aspect, 0.1f, 100.0f);
-  mat4 view = lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-
-  glUniformMatrix4fv(viewId, 1, GL_FALSE, &view[0][0]);
+  glm::mat4 projection =
+      glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
   glUniformMatrix4fv(projectionId, 1, GL_FALSE, &projection[0][0]);
 
+  // view
+	float deltaTime = 0.016f;
+  camera.processCameraMovement(window, deltaTime);
+  camera.processCameraLook(window, 1.0f);
+  glm::mat4 view = camera.getViewMatrix();
+  glUniformMatrix4fv(viewId, 1, GL_FALSE, &view[0][0]);
+
+  // lighting uniforms
   glUniform3fv(lightPositionId, 1, &lightPosition[0]);
-  glUniform3fv(viewPositionId, 1, &cameraPos[0]);
+  glUniform3fv(viewPositionId, 1, &camera.position[0]);
   glUniform3fv(lightColourId, 1, &lightColour[0]);
   glUniform1f(ambientStrengthId, ambientStrength);
   glUniform1f(shininessId, shininess);
@@ -120,7 +91,7 @@ void render() {
     // set model matrix
     glUniformMatrix4fv(modelId, 1, GL_FALSE, &obj->transform.getMatrix()[0][0]);
 
-    // bind object texture if it exists
+    // bind texture if one exists for this object
     if (obj->textureId != 0) {
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_2D, obj->textureId);
@@ -130,16 +101,17 @@ void render() {
       glUniform1i(useTextureId, 0);
     }
 
+    // rotate object
     obj->transform.rotation.x += rotSpeedX;
     obj->transform.rotation.y += rotSpeedY;
 
+    // draw object mesh
     obj->mesh.draw();
   }
 
   glUseProgram(0);
-
-  updateCamera();
 }
+
 void init() {
   // load shaders
   program = glw->loadShader("shaders/vs.vert", "shaders/fs.frag");
@@ -166,10 +138,10 @@ void init() {
 
   crateTex = TextureLoader::loadTexture("assets/textures/crate.png");
   std::cout << "crateTex: " << crateTex << std::endl;
-	globeTex = TextureLoader::loadTexture("assets/textures/globe.jpg");
-	std::cout << "globeTex: " << globeTex << std::endl;
-	donutTex = TextureLoader::loadTexture("assets/textures/donut3.jpg");
-	std::cout << "donutTex: " << donutTex << std::endl;
+  globeTex = TextureLoader::loadTexture("assets/textures/globe.jpg");
+  std::cout << "globeTex: " << globeTex << std::endl;
+  donutTex = TextureLoader::loadTexture("assets/textures/donut3.jpg");
+  std::cout << "donutTex: " << donutTex << std::endl;
 
   // create scene objects
   auto cube1 = scene.createObject("Cube1", cubeMesh);
@@ -180,12 +152,12 @@ void init() {
   auto torus1 = scene.createObject("Torus1", torusMesh);
   torus1->transform.position = vec3(2.0f, 1.0f, -4.0f);
   torus1->transform.scale = vec3(0.5f);
-	torus1->textureId = donutTex;
+  torus1->textureId = donutTex;
 
   auto sphere1 = scene.createObject("Sphere1", sphereMesh);
   sphere1->transform.position = vec3(-2.0f, -1.0f, -3.0f);
   sphere1->transform.scale = vec3(0.8f);
-	sphere1->textureId = globeTex;
+  sphere1->textureId = globeTex;
 }
 
 int main() {
