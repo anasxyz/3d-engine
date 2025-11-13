@@ -29,7 +29,7 @@ float camYaw = -90.0f;
 float camPitch = 0.0f;
 
 // lighting
-vec3 lightPosition(2.0f, 2.0f, 2.0f);
+vec3 lightPosition(60.0f, 2.0f, 2.0f);
 vec3 lightColour(1.0f, 1.0f, 1.0f); // white
 float ambientStrength = 0.1f;
 float shininess = 8.0f;
@@ -39,8 +39,8 @@ float specularStrength = 0.1f;
 Scene scene;
 
 // rotation speeds
-float rotSpeedX = 0.01f;
-float rotSpeedY = 0.01f;
+float rotSpeedX = 0.0003f;
+float rotSpeedY = 0.0003f;
 
 void updateCamera() {
   GLFWwindow *window = glw->window();
