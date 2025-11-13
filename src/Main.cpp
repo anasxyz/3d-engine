@@ -58,6 +58,11 @@ void updateObjectMovement(Object &obj) {
 void render() {
   GLFWwindow *window = glw->window();
 
+  static float lastFrame = 0.0f;
+  float currentFrame = glfwGetTime();
+  float deltaTime = currentFrame - lastFrame;
+  lastFrame = currentFrame;
+
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -73,7 +78,6 @@ void render() {
   glUniformMatrix4fv(projectionId, 1, GL_FALSE, &projection[0][0]);
 
   // view
-	float deltaTime = 0.016f;
   camera.processCameraMovement(window, deltaTime);
   camera.processCameraLook(window, 1.0f);
   glm::mat4 view = camera.getViewMatrix();
