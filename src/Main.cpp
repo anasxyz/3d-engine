@@ -26,6 +26,19 @@ GLuint lightPositionId, viewPositionId, lightColourId, ambientStrengthId,
 GLuint useTextureId, texSamplerId;
 GLuint crateTex, globeTex, donutTex;
 
+// controls
+// TODO: move this stuff to it's own separate area
+// initially hidden
+static bool showControls = false;
+static bool hPressedLastFrame = false;
+static float lastToggleTime = 0.0f;
+const float toggleCooldown = 0.3f;
+
+// fps stuff
+float deltaTime = 0.0f;
+float lastFrameTime = 0.0f;
+
+// window stuff
 GLWrapper *glw;
 int windowWidth = 1024, windowHeight = 768;
 
@@ -43,35 +56,59 @@ float specularStrength = 0.1f;
 Scene scene;
 
 // rotation speeds
-float rotSpeedX = 0.01f;
-float rotSpeedY = 0.01f;
+float rotSpeed = 0.5f;
 
 void updateObjectMovement(Object &obj) {
   GLFWwindow *window = glw->window();
 
-  if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
-    obj.transform.rotation.x += rotSpeedX;
-  if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
-    obj.transform.rotation.x -= rotSpeedX;
+  if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS) {
+    obj.transform.rotation.x += 2 * rotSpeed * deltaTime;
+  }
+  if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
+    obj.transform.rotation.y -= 2 * rotSpeed * deltaTime;
+  }
+  if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
+    obj.transform.rotation.z -= 2 * rotSpeed * deltaTime;
+  }
+
   if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
-    obj.transform.rotation.y += rotSpeedY;
-  if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
-    obj.transform.rotation.y -= rotSpeedY;
+    obj.transform.position.y += 1.0f * deltaTime;
+  if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
+    obj.transform.position.x -= 1.0f * deltaTime;
+  if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
+    obj.transform.position.y -= 1.0f * deltaTime;
+  if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
+    obj.transform.position.x += 1.0f * deltaTime;
+  if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS)
+    obj.transform.position.z += 1.0f * deltaTime;
+  if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS)
+    obj.transform.position.z -= 1.0f * deltaTime;
 }
 
 void render() {
-  static float lastFrameTime = 0.0f;
-	// idk i had to set it to an intial value to start
+  GLFWwindow *window = glw->window();
+
+  bool hPressed = glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS;
+  float currentTime = glfwGetTime();
+
+  if (hPressed && !hPressedLastFrame &&
+      (currentTime - lastToggleTime) > toggleCooldown) {
+    showControls = !showControls; // toggle menu
+    lastToggleTime = currentTime; // reset cooldown
+  }
+  hPressedLastFrame = hPressed;
+
+  // idk i had to set it to an intial value to start
   static float fps = 60.0f;
   float currentFrameTime = glfwGetTime();
-  float deltaTime = currentFrameTime - lastFrameTime;
+  deltaTime = currentFrameTime - lastFrameTime;
   lastFrameTime = currentFrameTime;
-
-  // smoothing factor 
-	// (0 < alpha <= 1)
+  // smoothing factor
+  // (0 < alpha <= 1)
   const float alpha = 0.1f;
   fps = fps * (1.0f - alpha) + (1.0f / deltaTime) * alpha;
 
+  // imgui help menu
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
@@ -81,15 +118,51 @@ void render() {
                ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize |
                    ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
                    ImGuiWindowFlags_NoBackground);
+
   ImGui::SetWindowFontScale(2.0f);
   ImGui::Text("FPS: %.1f", fps);
+
+  ImGui::Dummy(ImVec2(0.0f, 10.0f));
+
+  if (!showControls) {
+    ImGui::TextColored(ImVec4(1, 1, 0, 1), "Press H for controls");
+  }
+
   ImGui::End();
 
-  GLFWwindow *window = glw->window();
+  // imgui controls menu
+  if (showControls) {
+    ImGui::SetNextWindowPos(ImVec2(10, 60), ImGuiCond_Always);
+    ImGui::Begin("Controls", nullptr,
+                 ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize |
+                     ImGuiWindowFlags_NoMove);
 
+    ImGui::SetWindowFontScale(2.0f);
+
+    ImGui::Text("Camera Controls:");
+    ImGui::Text("WASD: move forward/backward/left/right");
+    ImGui::Text("Arrow keys: look around");
+
+    ImGui::Dummy(ImVec2(0.0f, 10.0f));
+
+    ImGui::Text("Control Crate (cube):");
+    ImGui::Text("U / O / P: rotate X / Y / Z");
+    ImGui::Text("I / K: move up/down (Y axis)");
+    ImGui::Text("J / L: move left/right (X axis)");
+    ImGui::Text("N / M: move forward/backward (Z axis)");
+
+    ImGui::Dummy(ImVec2(0.0f, 10.0f));
+
+    ImGui::Text("Press H: toggle this menu");
+
+    ImGui::End();
+  }
+
+  // clear screen
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+  // set viewport
   glfwGetFramebufferSize(window, &windowWidth, &windowHeight);
   glViewport(0, 0, windowWidth, windowHeight);
 
@@ -130,14 +203,16 @@ void render() {
     }
 
     // rotate object
-    obj->transform.rotation.x += rotSpeedX;
-    obj->transform.rotation.y += rotSpeedY;
+    obj->transform.rotation.x += rotSpeed * deltaTime;
+    obj->transform.rotation.y += rotSpeed * deltaTime;
 
     // draw object mesh
     obj->mesh.draw();
   }
 
   glUseProgram(0);
+
+  updateObjectMovement(*scene.objects[0]);
 
   ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -178,17 +253,15 @@ void init() {
   useTextureId = glGetUniformLocation(program, "useTexture");
   texSamplerId = glGetUniformLocation(program, "texSampler");
 
-  // create cube meshes
+  // create premade meshes
   Mesh cubeMesh = createCube();
   Mesh sphereMesh = createSphere();
   Mesh torusMesh = createTorus();
 
+  // load textures
   crateTex = TextureLoader::loadTexture("assets/textures/crate.png");
-  std::cout << "crateTex: " << crateTex << std::endl;
   globeTex = TextureLoader::loadTexture("assets/textures/globe.jpg");
-  std::cout << "globeTex: " << globeTex << std::endl;
   donutTex = TextureLoader::loadTexture("assets/textures/donut3.jpg");
-  std::cout << "donutTex: " << donutTex << std::endl;
 
   // create scene objects
   auto cube1 = scene.createObject("Cube1", cubeMesh);
