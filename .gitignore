@@ -1,7 +1,13 @@
-app
 /build/
+/dist/
+
+app
 *.o
 *.obj
 *.exe
 *.out
+
 imgui.ini
+*.DS_Store
+*.swp
+
