@@ -1,12 +1,12 @@
 #include "../include/Camera.h"
 #include <GLFW/glfw3.h>
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 Camera::Camera(glm::vec3 startPosition, glm::vec3 upVector, float startYaw,
                float startPitch)
     : position(startPosition), worldUp(upVector), yaw(startYaw),
-      pitch(startPitch), movementSpeed(3.0f) {
+      pitch(startPitch), movementSpeed(3.0f), sensitivity(50.0f) {
   updateCameraVectors();
 }
 
@@ -26,22 +26,23 @@ void Camera::processCameraMovement(GLFWwindow *window, float deltaTime) {
     position += right * velocity;
 }
 
-void Camera::processCameraLook(GLFWwindow *window, float rotSpeed) {
+void Camera::processCameraLook(GLFWwindow *window, float deltaTime) {
+  float velocity = sensitivity * deltaTime;
+
   if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-    yaw -= rotSpeed;
+    yaw -= velocity;
   if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-    yaw += rotSpeed;
+    yaw += velocity;
   if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-    pitch += rotSpeed;
+    pitch += velocity;
   if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-    pitch -= rotSpeed;
+    pitch -= velocity;
 
   // clamp pitch
   pitch = glm::clamp(pitch, -89.0f, 89.0f);
 
   updateCameraVectors();
 }
-
 void Camera::updateCameraVectors() {
   glm::vec3 f;
   f.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));

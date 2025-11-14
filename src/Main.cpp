@@ -5,10 +5,14 @@
 #include "../include/glad/glad.h"
 
 #include "../include/Camera.h"
-#include "../include/GLFW/wrapper_glfw.h"
+#include "../include/GLFW/WrapperGLFW.h"
 #include "../include/MeshFactory.h"
 #include "../include/Scene.h"
 #include "../include/TextureLoader.h"
+
+#include "../external/imgui/imgui.h"
+#include "../external/imgui/imgui_impl_glfw.h"
+#include "../external/imgui/imgui_impl_opengl3.h"
 
 using namespace glm;
 using namespace std;
@@ -56,12 +60,31 @@ void updateObjectMovement(Object &obj) {
 }
 
 void render() {
-  GLFWwindow *window = glw->window();
+  static float lastFrameTime = 0.0f;
+	// idk i had to set it to an intial value to start
+  static float fps = 60.0f;
+  float currentFrameTime = glfwGetTime();
+  float deltaTime = currentFrameTime - lastFrameTime;
+  lastFrameTime = currentFrameTime;
 
-  static float lastFrame = 0.0f;
-  float currentFrame = glfwGetTime();
-  float deltaTime = currentFrame - lastFrame;
-  lastFrame = currentFrame;
+  // exponential smoothing factor (0 < alpha <= 1)
+  const float alpha = 0.1f;
+  fps = fps * (1.0f - alpha) + (1.0f / deltaTime) * alpha;
+
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplGlfw_NewFrame();
+  ImGui::NewFrame();
+
+  ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
+  ImGui::Begin("FPS", nullptr,
+               ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize |
+                   ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+                   ImGuiWindowFlags_NoBackground);
+  ImGui::SetWindowFontScale(2.0f);
+  ImGui::Text("FPS: %.1f", fps);
+  ImGui::End();
+
+  GLFWwindow *window = glw->window();
 
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -79,7 +102,7 @@ void render() {
 
   // view
   camera.processCameraMovement(window, deltaTime);
-  camera.processCameraLook(window, 1.0f);
+  camera.processCameraLook(window, deltaTime);
   glm::mat4 view = camera.getViewMatrix();
   glUniformMatrix4fv(viewId, 1, GL_FALSE, &view[0][0]);
 
@@ -114,9 +137,28 @@ void render() {
   }
 
   glUseProgram(0);
+
+  ImGui::Render();
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+void initImGui() {
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO &io = ImGui::GetIO();
+  (void)io;
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+  ImGui::StyleColorsDark();
+
+  ImGui_ImplGlfw_InitForOpenGL(glw->window(), true);
+  ImGui_ImplOpenGL3_Init("#version 420");
 }
 
 void init() {
+  // init imgui
+  initImGui();
+
   // load shaders
   program = glw->loadShader("shaders/vs.vert", "shaders/fs.frag");
 
@@ -177,6 +219,10 @@ int main() {
     glw->displayVersion();
     init();
     glw->run(render);
+
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 
     delete glw;
   } catch (const std::exception &e) {

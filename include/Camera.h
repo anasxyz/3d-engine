@@ -15,7 +15,7 @@ public:
   float pitch;
 
   float movementSpeed;
-  float mouseSensitivity;
+  float sensitivity;
 
   Camera(glm::vec3 startPosition = glm::vec3(0.0f, 0.0f, 3.0f),
          glm::vec3 upVector = glm::vec3(0.0f, 1.0f, 0.0f),
@@ -25,7 +25,7 @@ public:
 
   void processCameraMovement(GLFWwindow *window, float deltaTime);
 
-  void processCameraLook(GLFWwindow *window, float rotSpeed);
+  void processCameraLook(GLFWwindow *window, float deltaTime);
 
 private:
   void updateCameraVectors();

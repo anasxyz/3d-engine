@@ -1,1 +1,7 @@
 app
+/build/
+*.o
+*.obj
+*.exe
+*.out
+imgui.ini

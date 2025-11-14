@@ -1,5 +1,5 @@
 #define STB_IMAGE_IMPLEMENTATION
-#include "../include/stb/stb_image.h"
+#include "../external/stb/stb_image.h"
 
 #include "../include/glad/glad.h"
 #include "../include/TextureLoader.h"
