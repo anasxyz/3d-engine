@@ -67,7 +67,8 @@ void render() {
   float deltaTime = currentFrameTime - lastFrameTime;
   lastFrameTime = currentFrameTime;
 
-  // exponential smoothing factor (0 < alpha <= 1)
+  // smoothing factor 
+	// (0 < alpha <= 1)
   const float alpha = 0.1f;
   fps = fps * (1.0f - alpha) + (1.0f / deltaTime) * alpha;
 
