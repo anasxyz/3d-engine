@@ -60,7 +60,17 @@ void updateObjectMovement(Object &obj) {
 }
 
 void render() {
-  // Start the Dear ImGui frame
+  static float lastFrameTime = 0.0f;
+	// idk i had to set it to an intial value to start
+  static float fps = 60.0f;
+  float currentFrameTime = glfwGetTime();
+  float deltaTime = currentFrameTime - lastFrameTime;
+  lastFrameTime = currentFrameTime;
+
+  // exponential smoothing factor (0 < alpha <= 1)
+  const float alpha = 0.1f;
+  fps = fps * (1.0f - alpha) + (1.0f / deltaTime) * alpha;
+
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
@@ -68,16 +78,13 @@ void render() {
   ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
   ImGui::Begin("FPS", nullptr,
                ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize |
-                   ImGuiWindowFlags_NoResize);
-  ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+                   ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+                   ImGuiWindowFlags_NoBackground);
+  ImGui::SetWindowFontScale(2.0f);
+  ImGui::Text("FPS: %.1f", fps);
   ImGui::End();
 
   GLFWwindow *window = glw->window();
-
-  static float lastFrame = 0.0f;
-  float currentFrame = glfwGetTime();
-  float deltaTime = currentFrame - lastFrame;
-  lastFrame = currentFrame;
 
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -95,7 +102,7 @@ void render() {
 
   // view
   camera.processCameraMovement(window, deltaTime);
-  camera.processCameraLook(window, 1.0f);
+  camera.processCameraLook(window, deltaTime);
   glm::mat4 view = camera.getViewMatrix();
   glUniformMatrix4fv(viewId, 1, GL_FALSE, &view[0][0]);
 
@@ -136,23 +143,20 @@ void render() {
 }
 
 void initImGui() {
-  // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGuiIO &io = ImGui::GetIO();
   (void)io;
-  io.ConfigFlags |=
-      ImGuiConfigFlags_NavEnableKeyboard; // enable keyboard control
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-  // Setup Dear ImGui style
   ImGui::StyleColorsDark();
 
-  // Setup Platform/Renderer bindings
   ImGui_ImplGlfw_InitForOpenGL(glw->window(), true);
-  ImGui_ImplOpenGL3_Init("#version 330");
+  ImGui_ImplOpenGL3_Init("#version 420");
 }
 
 void init() {
+  // init imgui
   initImGui();
 
   // load shaders
