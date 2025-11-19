@@ -6,7 +6,7 @@
 Camera::Camera(glm::vec3 startPosition, glm::vec3 upVector, float startYaw,
                float startPitch)
     : position(startPosition), worldUp(upVector), yaw(startYaw),
-      pitch(startPitch), movementSpeed(3.0f), sensitivity(50.0f) {
+      pitch(startPitch), movementSpeed(3.0f), sensitivity(75.0f) {
   updateCameraVectors();
 }
 
@@ -24,6 +24,10 @@ void Camera::processCameraMovement(GLFWwindow *window, float deltaTime) {
     position -= right * velocity;
   if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
     position += right * velocity;
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+		position += worldUp * velocity;
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+		position -= worldUp * velocity;
 }
 
 void Camera::processCameraLook(GLFWwindow *window, float deltaTime) {

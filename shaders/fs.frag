@@ -18,7 +18,7 @@ uniform bool useTexture;
 uniform sampler2D texSampler;
 
 void main() {
-	vec3 objectColour = vec3(0.7, 0.7, 0.75);
+	vec3 objectColour = fragColour.rgb;
 	vec3 baseColour = useTexture ? texture(texSampler, fragTexCoord).rgb : objectColour;
 
   vec3 N = normalize(fragNormal);
@@ -26,10 +26,10 @@ void main() {
   vec3 V = normalize(viewPosition - fragPosition);
   vec3 R = reflect(-L, N);
 
- // ambient
+  // ambient
   vec3 ambient = ambientStrength * lightColour;
 
- // diffuse 
+  // diffuse 
   float diff = max(dot(N, L), 0.0);
   vec3 diffuse = diff * lightColour;
 

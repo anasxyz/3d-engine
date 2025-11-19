@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -O2 -g -Iinclude -Iexternal/imgui -Iexternal/glm -Iexternal/stb
+CXXFLAGS = -std=c++17 -O2 -g -Iinclude -Iexternal/imgui -Iexternal/glm
 
 SRC_DIR = src
 EXTERNAL_DIR = external/imgui
@@ -26,7 +26,7 @@ $(LINUX_BUILD_DIR)/%.o: %.cpp
 
 # windows cross compile
 WIN_CXX = x86_64-w64-mingw32-g++
-WIN_CXXFLAGS = -std=c++17 -O2 -g -Iinclude -Iexternal/imgui -Iexternal/glm -Iexternal/stb
+WIN_CXXFLAGS = -std=c++17 -O2 -g -Iinclude -Iexternal/imgui -Iexternal/glm
 WIN_LDFLAGS = -Llib/win -lglfw3 -lopengl32 -lgdi32 -luser32
 
 WIN_BUILD_DIR = $(BUILD_DIR)/win

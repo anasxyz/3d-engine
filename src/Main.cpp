@@ -7,6 +7,7 @@
 #include "../include/Camera.h"
 #include "../include/GLFW/WrapperGLFW.h"
 #include "../include/MeshFactory.h"
+#include "../include/ObjectLoader.h"
 #include "../include/Scene.h"
 #include "../include/TextureLoader.h"
 
@@ -141,6 +142,7 @@ void render() {
 
     ImGui::Text("Camera Controls:");
     ImGui::Text("WASD: move forward/backward/left/right");
+		ImGui::Text("Space / Left Shift: move up/down");
     ImGui::Text("Arrow keys: look around");
 
     ImGui::Dummy(ImVec2(0.0f, 10.0f));
@@ -203,8 +205,8 @@ void render() {
     }
 
     // rotate object
-    obj->transform.rotation.x += rotSpeed * deltaTime;
-    obj->transform.rotation.y += rotSpeed * deltaTime;
+    // obj->transform.rotation.x += rotSpeed * deltaTime;
+    // obj->transform.rotation.y += rotSpeed * deltaTime;
 
     // draw object mesh
     obj->mesh.draw();
@@ -257,17 +259,21 @@ void init() {
   Mesh cubeMesh = createCube();
   Mesh sphereMesh = createSphere();
   Mesh torusMesh = createTorus();
+  Mesh carMesh = ObjectLoader::loadOBJModel("Car.obj",
+                                            vec4(0.7f, 0.7f, 0.75f, 1.0f));
 
   // load textures
-  crateTex = TextureLoader::loadTexture("assets/textures/crate.png");
-  globeTex = TextureLoader::loadTexture("assets/textures/globe.jpg");
-  donutTex = TextureLoader::loadTexture("assets/textures/donut3.jpg");
+  crateTex = TextureLoader::loadTexture("crate.png");
+  // cout << "crateTex: " << crateTex << endl;
+  globeTex = TextureLoader::loadTexture("globe.jpg");
+  // cout << "globeTex: " << globeTex << endl;
+  donutTex = TextureLoader::loadTexture("donut3.jpg");
+  // cout << "donutTex: " << donutTex << endl;
 
   // create scene objects
   auto cube1 = scene.createObject("Cube1", cubeMesh);
   cube1->transform.position = vec3(0.0f, 0.0f, -2.0f);
   cube1->transform.scale = vec3(0.5f, 0.3f, 0.5f);
-  cube1->textureId = crateTex;
 
   auto torus1 = scene.createObject("Torus1", torusMesh);
   torus1->transform.position = vec3(2.0f, 1.0f, -4.0f);
@@ -278,6 +284,9 @@ void init() {
   sphere1->transform.position = vec3(-2.0f, -1.0f, -3.0f);
   sphere1->transform.scale = vec3(0.8f);
   sphere1->textureId = globeTex;
+
+  auto obj = scene.createObject("Car1", carMesh);
+  obj->transform.position = vec3(0.0f, 0.0f, -10.0f);
 }
 
 int main() {

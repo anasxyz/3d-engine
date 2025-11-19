@@ -6,8 +6,11 @@
 #include <iostream>
 #include <string>
 
-GLuint TextureLoader::loadTexture(const std::string &path) {
+std::string textureBaseDir = "assets/textures/";
+
+GLuint TextureLoader::loadTexture(const std::string &texPath) {
   int width, height, nrChannels;
+	std::string path = textureBaseDir + texPath;
   stbi_set_flip_vertically_on_load(true);
   unsigned char *data =
       stbi_load(path.c_str(), &width, &height, &nrChannels, 0);

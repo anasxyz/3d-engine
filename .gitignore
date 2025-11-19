@@ -1,9 +1,12 @@
 /build/
-# /dist/
+/dist/
 
 app
 *.o
+
 *.obj
+*.mtl
+
 *.exe
 *.out
 
