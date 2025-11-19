@@ -8,8 +8,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include <filesystem>
-namespace fs = std::filesystem;
 std::string objBaseDir = "assets/models/";
 std::string mtlBaseDir = "assets/materials/";
 

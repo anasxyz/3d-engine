@@ -1,5 +1,4 @@
 #include "../include/Mesh.h"
-#include <iostream>
 
 void Mesh::setup(const std::vector<Vertex> &vertices,
                  const std::vector<GLuint> &indices) {
