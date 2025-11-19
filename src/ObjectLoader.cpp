@@ -31,6 +31,9 @@ Mesh ObjectLoader::loadOBJModel(
     std::cerr << "ERR: " << err << "\n";
   if (!ret)
     throw std::runtime_error("Failed to load OBJ: " + filename);
+	if (!materials.empty()) {
+		std::cout << "Loaded material: " << materials[0].name << std::endl;
+	}
 
   for (size_t i = 0; i < materials.size(); i++) {
     const std::string &texName = materials[i].diffuse_texname;
@@ -78,7 +81,7 @@ Mesh ObjectLoader::loadOBJModel(
                            attrib.vertices[3 * idx.vertex_index + 1],
                            attrib.vertices[3 * idx.vertex_index + 2]};
 
-					// assign colour from material if it exists
+          // assign colour from material if it exists
           if (currentMatID >= 0 && currentMatID < (int)materials.size()) {
             const auto &mat = materials[currentMatID];
             vert.colour =

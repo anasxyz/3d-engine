@@ -207,7 +207,7 @@ void render() {
     }
 
     // rotate objects
-    obj->transform.rotation.y += rotSpeed * deltaTime; 
+    obj->transform.rotation.y += rotSpeed * deltaTime;
     obj->transform.rotation.x += rotSpeed * 0.1f * deltaTime;
 
     // draw object mesh
@@ -261,22 +261,24 @@ void init() {
   Mesh cubeMesh = createCube();
   Mesh sphereMesh = createSphere();
   Mesh torusMesh = createTorus();
-  Mesh carMesh =
-      ObjectLoader::loadOBJModel("venus.obj", vec4(0.7f, 0.7f, 0.75f, 1.0f));
+
+  // load external .obj model
+	Mesh carMesh = ObjectLoader::loadOBJModel("Car.obj", vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	Mesh eyeMesh = ObjectLoader::loadOBJModel("eyeball.obj", vec4(0.0f, 0.0f, 1.0f, 1.0f));
 
   // load textures
   crateTex = TextureLoader::loadTexture("crate.png");
   donutTex = TextureLoader::loadTexture("donut3.jpg");
 
-	// mercuryTex = TextureLoader::loadTexture("mercury_diffuse.jpg");
-  // venusTex = TextureLoader::loadTexture("venus_diffuse.png");
-  earthTex = TextureLoader::loadTexture("earth_diffuse.jpg");
-	// marsTex = TextureLoader::loadTexture("mars_diffuse.jpg");
-	// jupiterTex = TextureLoader::loadTexture("jupiter_diffuse.jpg");
-	// saturnTex = TextureLoader::loadTexture("saturn_diffuse.jpg");
-	// uranusTex = TextureLoader::loadTexture("uranus_diffuse.jpg");
-	// neptuneTex = TextureLoader::loadTexture("neptune_diffuse.jpg");
-	// plutoTex = TextureLoader::loadTexture("pluto_diffuse.jpg");
+  // mercuryTex = TextureLoader::loadTexture("mercury_diffuse.jpg");
+  // venusTex = TextureLoader::loadTexture("planets/venus_diffuse.png");
+  earthTex = TextureLoader::loadTexture("planets/earth_diffuse.jpg");
+  // marsTex = TextureLoader::loadTexture("mars_diffuse.jpg");
+  // jupiterTex = TextureLoader::loadTexture("jupiter_diffuse.jpg");
+  // saturnTex = TextureLoader::loadTexture("saturn_diffuse.jpg");
+  // uranusTex = TextureLoader::loadTexture("uranus_diffuse.jpg");
+  // neptuneTex = TextureLoader::loadTexture("neptune_diffuse.jpg");
+  // plutoTex = TextureLoader::loadTexture("pluto_diffuse.jpg");
 
   // create scene objects
   auto cube1 = scene.createObject("Cube1", cubeMesh);
@@ -293,9 +295,10 @@ void init() {
   sphere1->transform.scale = vec3(0.8f);
   sphere1->textureId = earthTex;
 
-  auto obj = scene.createObject("Car1", carMesh);
-  obj->transform.position = vec3(0.0f, 0.0f, -10.0f);
-  obj->textureId = venusTex;
+	auto car = scene.createObject("car", carMesh);
+	car->transform.position = vec3(10.0f, 0.0f, -10.0f);
+
+
 }
 
 int main() {
