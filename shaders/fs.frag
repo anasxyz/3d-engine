@@ -18,7 +18,7 @@ uniform bool useTexture;
 uniform sampler2D texSampler;
 
 void main() {
-	vec3 objectColour = vec3(0.7, 0.7, 0.75);
+	vec3 objectColour = fragColour.rgb;
 	vec3 baseColour = useTexture ? texture(texSampler, fragTexCoord).rgb : objectColour;
 
   vec3 N = normalize(fragNormal);

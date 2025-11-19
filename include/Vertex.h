@@ -7,12 +7,23 @@ using namespace glm;
 
 struct Vertex {
   vec3 position;
+  vec4 colour;
   vec3 normal;
   vec2 uv;
-	// default colour
-  vec4 colour = vec4(0.7f, 0.7f, 0.75f, 1.0f); 
 
-  Vertex(const vec3 &p, const vec3 &n = vec3(0), const vec2 &t = vec2(0))
-      : position(p), normal(n), uv(t) {}
+  Vertex() : position(0.0f), colour(1.0f), normal(0.0f, 1.0f, 0.0f), uv(0.0f) {}
+
 };
+
+/*
+ * idk why the render bug is happening
+ *
+ * position = 12 bytes because vec3
+ * colour = 16 bytes because vec4
+ * normal = 12 bytes because vec3
+ * uv = 8 bytes because vec2
+ *
+ * total = 48 bytes
+ *
+ */
 static_assert(sizeof(Vertex) == 48, "Vertex struct must be tightly packed");

@@ -270,7 +270,6 @@ void init() {
   auto cube1 = scene.createObject("Cube1", cubeMesh);
   cube1->transform.position = vec3(0.0f, 0.0f, -2.0f);
   cube1->transform.scale = vec3(0.5f, 0.3f, 0.5f);
-  cube1->textureId = crateTex;
 
   auto torus1 = scene.createObject("Torus1", torusMesh);
   torus1->transform.position = vec3(2.0f, 1.0f, -4.0f);
