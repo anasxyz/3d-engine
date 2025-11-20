@@ -1,9 +1,7 @@
-#define _USE_MATH_DEFINES // For M_PI on some platforms
-#include <cmath>
+#define _USE_MATH_DEFINES
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
-#include <random> // Include for better random generation, though rand() is simpler
 
 #include "../include/glad/glad.h"
 
@@ -74,6 +72,9 @@ float rotSpeed = 0.2f;
 // scaling factors
 const float sizeScale = 5.0f;
 const float posScale = 10.0f;
+
+vec3 sunMovementDirection = vec3(0.0f, 0.0f, 1.0f);
+float sunMovementSpeed = 0.0f;
 
 // orbit radii (pre calculated from init setup position.x * posScale)
 const float mercuryRadius = 6.0f * posScale;
@@ -204,6 +205,24 @@ void render() {
 
   skybox->render(view, projection);
 
+  // scene object retrieval and sun movement
+  // obviously assuming the sun is the first object
+  Object *sunObj = scene.objects[0].get();
+  // find earth object to correctly calculate moon's orbit center
+  Object *earthObj = nullptr;
+  for (auto &obj : scene.objects) {
+    if (obj->name == "earth") {
+      earthObj = obj.get();
+      break;
+    }
+  }
+
+  sunObj->transform.position +=
+      sunMovementDirection * sunMovementSpeed * deltaTime;
+
+  lightPosition = sunObj->transform.position;
+
+  // shader uniform setup
   glUseProgram(program);
 
   glUniformMatrix4fv(viewId, 1, GL_FALSE, &view[0][0]);
@@ -216,19 +235,7 @@ void render() {
   glUniform1f(shininessId, shininess);
   glUniform1f(specularStrengthId, specularStrength);
 
-  // find earth object to correctly calculate moon's orbit center
-  Object *earthObj = nullptr;
-  for (auto &obj : scene.objects) {
-    if (obj->name == "earth") {
-      earthObj = obj.get();
-      break;
-    }
-  }
-
-  // separate the movement for the moon to ensure earths position is updated
-  // first bc scene.objects is a vector and we can rely on the order of
-  // insertion which is the earth then the moon
-
+  // object movement and rendering
   for (auto &obj : scene.objects) {
 
     // movement and orbital logic
@@ -236,14 +243,13 @@ void render() {
     float axialSpeed = 0.0f;
     float radius = 0.0f;
     float *anglePtr = nullptr;
-    vec3 orbitCenter = vec3(0.0f);
+    vec3 orbitCenter = sunObj->transform.position;
 
     if (obj->name == "sun") {
-      // sun only rotates on its axis
       axialSpeed = sunAxialSpeed;
       obj->transform.rotation.y += glm::radians(axialSpeed * deltaTime);
     }
-    // planets (orbit the sun)
+    // planets (orbit the moving sun)
     else if (obj->name == "mercury") {
       orbitSpeed = mercuryOrbitSpeed;
       axialSpeed = mercuryAxialSpeed;
@@ -291,13 +297,12 @@ void render() {
       radius = plutoRadius;
       anglePtr = &plutoOrbitAngle;
     }
-    // moon special case (orbit the earth)
+    // moon special case (orbit the earth which orbits the sun)
     else if (obj->name == "moon" && earthObj != nullptr) {
       orbitSpeed = moonOrbitSpeed;
       axialSpeed = moonAxialSpeed;
       radius = moonRadius;
       anglePtr = &moonOrbitAngle;
-      // the moon's center of orbit is the earth's current position
       orbitCenter = earthObj->transform.position;
     }
 
@@ -315,13 +320,15 @@ void render() {
 
       obj->transform.position.x = orbitCenter.x + radius * glm::cos(*anglePtr);
       obj->transform.position.z = orbitCenter.z + radius * glm::sin(*anglePtr);
+      obj->transform.position.y =
+          orbitCenter.y;
     }
 
     glUniformMatrix4fv(modelId, 1, GL_FALSE, &obj->transform.getMatrix()[0][0]);
 
     // if current object is the sun
     bool isSun = (obj->name == "sun");
-    // set uniform flagg
+    // set uniform flag
     glUniform1i(isLightSourceId, isSun ? 1 : 0);
 
     if (obj->textureId != 0) {
@@ -408,8 +415,7 @@ void init() {
   // seed random number generator to start planets in different places
   std::srand(static_cast<unsigned int>(time(nullptr)));
 
-  // assign random starting orbital angles (0 to 360 degrees, converted to
-  // radians)
+  // assign random starting orbital angles
   auto randAngle = []() { return glm::radians((float)(std::rand() % 360)); };
 
   mercuryOrbitAngle = randAngle();
