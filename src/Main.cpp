@@ -29,6 +29,11 @@ GLuint crateTex, donutTex;
 GLuint mercuryTex, venusTex, earthTex, marsTex, jupiterTex, saturnTex,
     uranusTex, neptuneTex, plutoTex;
 
+GLuint skyboxProgram;
+GLuint skyboxViewId, skyboxProjectionId, skyboxSamplerId;
+Mesh skyboxCubeMesh;
+GLuint cubemapTexture;
+
 // controls
 // TODO: move this stuff to it's own separate area
 // initially hidden
@@ -96,22 +101,18 @@ void render() {
 
   if (hPressed && !hPressedLastFrame &&
       (currentTime - lastToggleTime) > toggleCooldown) {
-    showControls = !showControls; // toggle menu
-    lastToggleTime = currentTime; // reset cooldown
+    showControls = !showControls;
+    lastToggleTime = currentTime;
   }
   hPressedLastFrame = hPressed;
 
-  // idk i had to set it to an intial value to start
   static float fps = 60.0f;
   float currentFrameTime = glfwGetTime();
   deltaTime = currentFrameTime - lastFrameTime;
   lastFrameTime = currentFrameTime;
-  // smoothing factor
-  // (0 < alpha <= 1)
   const float alpha = 0.1f;
   fps = fps * (1.0f - alpha) + (1.0f / deltaTime) * alpha;
 
-  // imgui help menu
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
@@ -133,7 +134,6 @@ void render() {
 
   ImGui::End();
 
-  // imgui controls menu
   if (showControls) {
     ImGui::SetNextWindowPos(ImVec2(10, 60), ImGuiCond_Always);
     ImGui::Begin("Controls", nullptr,
@@ -162,29 +162,39 @@ void render() {
     ImGui::End();
   }
 
-  // clear screen
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  // set viewport
   glfwGetFramebufferSize(window, &windowWidth, &windowHeight);
   glViewport(0, 0, windowWidth, windowHeight);
 
-  glUseProgram(program);
-
-  // projection
   float aspect = (float)windowWidth / (float)windowHeight;
   glm::mat4 projection =
       glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
-  glUniformMatrix4fv(projectionId, 1, GL_FALSE, &projection[0][0]);
 
-  // view
   camera.processCameraMovement(window, deltaTime);
   camera.processCameraLook(window, deltaTime);
   glm::mat4 view = camera.getViewMatrix();
-  glUniformMatrix4fv(viewId, 1, GL_FALSE, &view[0][0]);
 
-  // lighting uniforms
+	// skybox
+  // --------
+  glDepthFunc(GL_LEQUAL);
+  glUseProgram(skyboxProgram);
+  glm::mat4 viewNoTranslation = glm::mat4(glm::mat3(view));
+  glUniformMatrix4fv(skyboxViewId, 1, GL_FALSE, &viewNoTranslation[0][0]);
+  glUniformMatrix4fv(skyboxProjectionId, 1, GL_FALSE, &projection[0][0]);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+  glUniform1i(skyboxSamplerId, 0);
+  skyboxCubeMesh.draw();
+  glDepthFunc(GL_LESS);
+  // -------
+
+  glUseProgram(program);
+
+  glUniformMatrix4fv(viewId, 1, GL_FALSE, &view[0][0]);
+  glUniformMatrix4fv(projectionId, 1, GL_FALSE, &projection[0][0]);
+
   glUniform3fv(lightPositionId, 1, &lightPosition[0]);
   glUniform3fv(viewPositionId, 1, &camera.position[0]);
   glUniform3fv(lightColourId, 1, &lightColour[0]);
@@ -193,10 +203,8 @@ void render() {
   glUniform1f(specularStrengthId, specularStrength);
 
   for (auto &obj : scene.objects) {
-    // set model matrix
     glUniformMatrix4fv(modelId, 1, GL_FALSE, &obj->transform.getMatrix()[0][0]);
 
-    // bind texture if one exists for this object
     if (obj->textureId != 0) {
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_2D, obj->textureId);
@@ -206,11 +214,9 @@ void render() {
       glUniform1i(useTextureId, 0);
     }
 
-    // rotate objects
     obj->transform.rotation.y += rotSpeed * deltaTime;
     obj->transform.rotation.x += rotSpeed * 0.1f * deltaTime;
 
-    // draw object mesh
     obj->mesh.draw();
   }
 
@@ -241,8 +247,24 @@ void init() {
 
   // load shaders
   program = glw->loadShader("shaders/vs.vert", "shaders/fs.frag");
+  skyboxProgram = glw->loadShader("shaders/skybox.vert", "shaders/skybox.frag");
 
-  // uniform locations
+  skyboxViewId = glGetUniformLocation(skyboxProgram, "view");
+  skyboxProjectionId = glGetUniformLocation(skyboxProgram, "projection");
+  skyboxSamplerId = glGetUniformLocation(skyboxProgram, "skybox");
+
+  skyboxCubeMesh = createCube();
+
+  std::vector<std::string> faces;
+  faces.push_back("space2/px.png"); // +X
+  faces.push_back("space2/nx.png"); // -X
+  faces.push_back("space2/py.png"); // +Y
+  faces.push_back("space2/ny.png"); // -Y
+  faces.push_back("space2/pz.png"); // +Z
+  faces.push_back("space2/nz.png"); // -Z
+
+  cubemapTexture = TextureLoader::loadCubemap(faces);
+
   modelId = glGetUniformLocation(program, "model");
   viewId = glGetUniformLocation(program, "view");
   projectionId = glGetUniformLocation(program, "projection");
@@ -265,16 +287,7 @@ void init() {
   // load textures
   crateTex = TextureLoader::loadTexture("crate.png");
   donutTex = TextureLoader::loadTexture("donut3.jpg");
-
-  // mercuryTex = TextureLoader::loadTexture("mercury_diffuse.jpg");
-  // venusTex = TextureLoader::loadTexture("planets/venus_diffuse.png");
   earthTex = TextureLoader::loadTexture("planets/earth_diffuse.jpg");
-  // marsTex = TextureLoader::loadTexture("mars_diffuse.jpg");
-  // jupiterTex = TextureLoader::loadTexture("jupiter_diffuse.jpg");
-  // saturnTex = TextureLoader::loadTexture("saturn_diffuse.jpg");
-  // uranusTex = TextureLoader::loadTexture("uranus_diffuse.jpg");
-  // neptuneTex = TextureLoader::loadTexture("neptune_diffuse.jpg");
-  // plutoTex = TextureLoader::loadTexture("pluto_diffuse.jpg");
 
   // create scene objects
   auto cube1 = scene.createObject("Cube1", cubeMesh);
@@ -291,11 +304,11 @@ void init() {
   sphere1->transform.scale = vec3(0.8f);
   sphere1->textureId = earthTex;
 
-	auto car = ObjectLoader::loadOBJObject("Car.obj", vec4(0.0f, 0.0f, 0.0f, 1.0f));
-	scene.addObject(car);
-	car->transform.position = vec3(10.0f, 0.0f, -10.0f);
+  auto car =
+      ObjectLoader::loadOBJObject("Car.obj", vec4(0.0f, 0.0f, 0.0f, 1.0f));
+  scene.addObject(car);
+  car->transform.position = vec3(10.0f, 0.0f, -10.0f);
 }
-
 int main() {
   try {
     glw = new GLWrapper(windowWidth, windowHeight, "Project");

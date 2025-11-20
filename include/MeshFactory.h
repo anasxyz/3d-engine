@@ -148,3 +148,66 @@ inline Mesh createTorus(float majorRadius = 1.0f, float minorRadius = 0.5f,
   torus.setup(vertices, indices);
   return torus;
 }
+
+inline Mesh
+createSkybox(float radius = 1.0f,
+             int stacks = 64, // Increased resolution for better quality
+             int slices = 128) {
+  Mesh sphere;
+
+  std::vector<Vertex> vertices;
+  std::vector<GLuint> indices;
+
+  for (int i = 0; i <= stacks; i++) {
+    float v_ratio = float(i) / stacks; // normalized V from 0 to 1
+    float phi = v_ratio *
+                glm::pi<float>(); // latitude: 0 (top pole) to pi (bottom pole)
+
+    float sinPhi = sin(phi);
+    float cosPhi = cos(phi);
+
+    for (int j = 0; j <= slices; j++) {
+      float u_ratio = float(j) / slices;            // normalized U from 0 to 1
+      float theta = u_ratio * glm::two_pi<float>(); // longitude: 0 to 2*pi
+
+      // Cartesian coordinates from spherical coordinates
+      float x = radius * sinPhi * cos(theta);
+      float y = radius * cosPhi;
+      float z = radius * sinPhi * sin(theta);
+
+      glm::vec3 pos(x, y, z);
+      glm::vec3 normal =
+          glm::normalize(pos); // Normal is same as position for a sphere
+
+      // Equirectangular UV mapping:
+      // U: (atan2(z, x) / (2 * PI)) + 0.5
+      // V: (asin(y / radius) / PI) + 0.5
+      // However, since `u_ratio` and `v_ratio` already effectively map 0-1
+      // across the longitude/latitude, we can directly use them. The `1.0f -
+      // v_ratio` is crucial for vertical orientation.
+      glm::vec2 uv(u_ratio, 1.0f - v_ratio); // 1.0f - v_ratio to flip V if
+                                             // texture origin is bottom-left
+
+      vertices.emplace_back(pos, normal, uv);
+    }
+  }
+
+  // Indices generation (same as before, it's correct for a UV-mapped sphere)
+  for (int i = 0; i < stacks; i++) {
+    for (int j = 0; j < slices; j++) {
+      int first = i * (slices + 1) + j;
+      int second = first + slices + 1;
+
+      indices.push_back(first);
+      indices.push_back(second);
+      indices.push_back(first + 1);
+
+      indices.push_back(second);
+      indices.push_back(second + 1);
+      indices.push_back(first + 1);
+    }
+  }
+
+  sphere.setup(vertices, indices);
+  return sphere;
+}
