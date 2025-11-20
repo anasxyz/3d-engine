@@ -1,6 +1,9 @@
+#define _USE_MATH_DEFINES // For M_PI on some platforms
+#include <cmath>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
+#include <random> // Include for better random generation, though rand() is simpler
 
 #include "../include/glad/glad.h"
 
@@ -48,6 +51,7 @@ int windowWidth = 1024, windowHeight = 768;
 
 // camera
 Camera camera(vec3(50.0f, 0.0f, 50.0f));
+float renderDistance = 10000.0f;
 
 // lighting
 vec3 lightPosition(0.0f, 0.0f, 0.0f);
@@ -66,6 +70,69 @@ UIManager ui;
 // rotation speeds
 float rotSpeed = 0.2f;
 
+// solar system specific state and constants
+// scaling factors
+const float sizeScale = 5.0f;
+const float posScale = 10.0f;
+
+// orbit radii (pre calculated from init setup position.x * posScale)
+const float mercuryRadius = 6.0f * posScale;
+const float venusRadius = 10.0f * posScale;
+const float earthRadius = 14.0f * posScale;
+const float marsRadius = 18.0f * posScale;
+const float jupiterRadius = 35.0f * posScale;
+const float saturnRadius = 55.0f * posScale;
+const float uranusRadius = 75.0f * posScale;
+const float neptuneRadius = 95.0f * posScale;
+const float plutoRadius = 110.0f * posScale;
+const float moonRadius = 4.0f * sizeScale;
+
+// orbital speeds (degrees per second)
+const float mercuryOrbitSpeed = 5.0f;
+const float venusOrbitSpeed = 3.75f;
+const float earthOrbitSpeed = 2.5f;
+const float marsOrbitSpeed = 2.0f;
+const float jupiterOrbitSpeed = 1.0f;
+const float saturnOrbitSpeed = 0.75f;
+const float uranusOrbitSpeed = 0.375f;
+const float neptuneOrbitSpeed = 0.25f;
+const float plutoOrbitSpeed = 0.125f;
+const float moonOrbitSpeed = 15.0f;
+
+// axial rotation speeds (degrees per second)
+// how fast the planet spins
+const float sunAxialSpeed = 0.50f;
+const float mercuryAxialSpeed = 0.375f;
+const float venusAxialSpeed = 0.25f;
+const float earthAxialSpeed = 7.5f;
+const float marsAxialSpeed = 0.45f;
+const float jupiterAxialSpeed = 12.5f;
+const float saturnAxialSpeed = 11.25f;
+const float uranusAxialSpeed = 0.3f;
+const float neptuneAxialSpeed = 2.75f;
+const float plutoAxialSpeed = 0.125f;
+const float moonAxialSpeed = 0.50f;
+
+// current orbital angles (in radians)
+// state variables updated every frame
+float mercuryOrbitAngle = 0.0f;
+float venusOrbitAngle = 0.0f;
+float earthOrbitAngle = 0.0f;
+float marsOrbitAngle = 0.0f;
+float jupiterOrbitAngle = 0.0f;
+float saturnOrbitAngle = 0.0f;
+float uranusOrbitAngle = 0.0f;
+float neptuneOrbitAngle = 0.0f;
+float plutoOrbitAngle = 0.0f;
+float moonOrbitAngle = 0.0f;
+
+// set the initial position of a planet based on its radius and starting angle
+void setPlanetInitialPosition(Object *obj, float radius, float angleInRadians) {
+  obj->transform.position.x = radius * glm::cos(angleInRadians);
+  obj->transform.position.z = radius * glm::sin(angleInRadians);
+  obj->transform.position.y = 0.0f;
+}
+
 void updateObjectMovement(Object &obj) {
   GLFWwindow *window = glw->window();
 
@@ -80,17 +147,17 @@ void updateObjectMovement(Object &obj) {
   }
 
   if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
-    obj.transform.position.y += 1.0f * deltaTime;
+    obj.transform.position.y += 100.0f * deltaTime;
   if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
-    obj.transform.position.x -= 1.0f * deltaTime;
+    obj.transform.position.x -= 100.0f * deltaTime;
   if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
-    obj.transform.position.y -= 1.0f * deltaTime;
+    obj.transform.position.y -= 100.0f * deltaTime;
   if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
-    obj.transform.position.x += 1.0f * deltaTime;
+    obj.transform.position.x += 100.0f * deltaTime;
   if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS)
-    obj.transform.position.z += 1.0f * deltaTime;
+    obj.transform.position.z += 100.0f * deltaTime;
   if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS)
-    obj.transform.position.z -= 1.0f * deltaTime;
+    obj.transform.position.z -= 100.0f * deltaTime;
 }
 
 void render() {
@@ -129,7 +196,7 @@ void render() {
 
   float aspect = (float)windowWidth / (float)windowHeight;
   glm::mat4 projection =
-      glm::perspective(glm::radians(45.0f), aspect, 0.1f, 1000.0f);
+      glm::perspective(glm::radians(45.0f), aspect, 0.1f, renderDistance);
 
   camera.processCameraMovement(window, deltaTime);
   camera.processCameraLook(window, deltaTime);
@@ -149,7 +216,107 @@ void render() {
   glUniform1f(shininessId, shininess);
   glUniform1f(specularStrengthId, specularStrength);
 
+  // find earth object to correctly calculate moon's orbit center
+  Object *earthObj = nullptr;
   for (auto &obj : scene.objects) {
+    if (obj->name == "earth") {
+      earthObj = obj.get();
+      break;
+    }
+  }
+
+  // separate the movement for the moon to ensure earths position is updated
+  // first bc scene.objects is a vector and we can rely on the order of
+  // insertion which is the earth then the moon
+
+  for (auto &obj : scene.objects) {
+
+    // movement and orbital logic
+    float orbitSpeed = 0.0f;
+    float axialSpeed = 0.0f;
+    float radius = 0.0f;
+    float *anglePtr = nullptr;
+    vec3 orbitCenter = vec3(0.0f);
+
+    if (obj->name == "sun") {
+      // sun only rotates on its axis
+      axialSpeed = sunAxialSpeed;
+      obj->transform.rotation.y += glm::radians(axialSpeed * deltaTime);
+    }
+    // planets (orbit the sun)
+    else if (obj->name == "mercury") {
+      orbitSpeed = mercuryOrbitSpeed;
+      axialSpeed = mercuryAxialSpeed;
+      radius = mercuryRadius;
+      anglePtr = &mercuryOrbitAngle;
+    } else if (obj->name == "venus") {
+      orbitSpeed = venusOrbitSpeed;
+      axialSpeed = venusAxialSpeed;
+      radius = venusRadius;
+      anglePtr = &venusOrbitAngle;
+    } else if (obj->name == "earth") {
+      orbitSpeed = earthOrbitSpeed;
+      axialSpeed = earthAxialSpeed;
+      radius = earthRadius;
+      anglePtr = &earthOrbitAngle;
+      obj->transform.rotation.x = glm::radians(23.5f);
+    } else if (obj->name == "mars") {
+      orbitSpeed = marsOrbitSpeed;
+      axialSpeed = marsAxialSpeed;
+      radius = marsRadius;
+      anglePtr = &marsOrbitAngle;
+    } else if (obj->name == "jupiter") {
+      orbitSpeed = jupiterOrbitSpeed;
+      axialSpeed = jupiterAxialSpeed;
+      radius = jupiterRadius;
+      anglePtr = &jupiterOrbitAngle;
+    } else if (obj->name == "saturn") {
+      orbitSpeed = saturnOrbitSpeed;
+      axialSpeed = saturnAxialSpeed;
+      radius = saturnRadius;
+      anglePtr = &saturnOrbitAngle;
+    } else if (obj->name == "uranus") {
+      orbitSpeed = uranusOrbitSpeed;
+      axialSpeed = uranusAxialSpeed;
+      radius = uranusRadius;
+      anglePtr = &uranusOrbitAngle;
+    } else if (obj->name == "neptune") {
+      orbitSpeed = neptuneOrbitSpeed;
+      axialSpeed = neptuneAxialSpeed;
+      radius = neptuneRadius;
+      anglePtr = &neptuneOrbitAngle;
+    } else if (obj->name == "pluto") {
+      orbitSpeed = plutoOrbitSpeed;
+      axialSpeed = plutoAxialSpeed;
+      radius = plutoRadius;
+      anglePtr = &plutoOrbitAngle;
+    }
+    // moon special case (orbit the earth)
+    else if (obj->name == "moon" && earthObj != nullptr) {
+      orbitSpeed = moonOrbitSpeed;
+      axialSpeed = moonAxialSpeed;
+      radius = moonRadius;
+      anglePtr = &moonOrbitAngle;
+      // the moon's center of orbit is the earth's current position
+      orbitCenter = earthObj->transform.position;
+    }
+
+    // apply axial rotation (spin)
+    if (axialSpeed > 0.0f) {
+      obj->transform.rotation.y += glm::radians(axialSpeed * deltaTime);
+    }
+
+    // apply orbital translation (for everything that orbits)
+    if (anglePtr != nullptr && orbitSpeed > 0.0f) {
+      *anglePtr += glm::radians(orbitSpeed * deltaTime);
+      if (*anglePtr > 2.0f * M_PI) {
+        *anglePtr -= 2.0f * M_PI;
+      }
+
+      obj->transform.position.x = orbitCenter.x + radius * glm::cos(*anglePtr);
+      obj->transform.position.z = orbitCenter.z + radius * glm::sin(*anglePtr);
+    }
+
     glUniformMatrix4fv(modelId, 1, GL_FALSE, &obj->transform.getMatrix()[0][0]);
 
     // if current object is the sun
@@ -165,9 +332,6 @@ void render() {
     } else {
       glUniform1i(useTextureId, 0);
     }
-
-    obj->transform.rotation.y += rotSpeed * deltaTime;
-    obj->transform.rotation.x += rotSpeed * 0.1f * deltaTime;
 
     obj->mesh.draw();
   }
@@ -228,7 +392,7 @@ void init() {
   GLuint earthTex = gTextureManager.loadTexture("planets/earth_diffuse.jpg");
   GLuint mercuryTex =
       gTextureManager.loadTexture("planets/mercury_diffuse.jpg");
-  GLuint venusTex = gTextureManager.loadTexture("planets/venus_diffuse.png");
+  GLuint venusTex = gTextureManager.loadTexture("planets/venus_diffuse.jpg");
   GLuint marsTex = gTextureManager.loadTexture("planets/mars_diffuse.jpg");
   GLuint jupiterTex =
       gTextureManager.loadTexture("planets/jupiter_diffuse.jpg");
@@ -241,78 +405,85 @@ void init() {
   GLuint moonTex = gTextureManager.loadTexture("planets/moon_diffuse.jpg");
   GLuint sunTex = gTextureManager.loadTexture("planets/sun_diffuse.jpg");
 
+  // seed random number generator to start planets in different places
+  std::srand(static_cast<unsigned int>(time(nullptr)));
+
+  // assign random starting orbital angles (0 to 360 degrees, converted to
+  // radians)
+  auto randAngle = []() { return glm::radians((float)(std::rand() % 360)); };
+
+  mercuryOrbitAngle = randAngle();
+  venusOrbitAngle = randAngle();
+  earthOrbitAngle = randAngle();
+  marsOrbitAngle = randAngle();
+  jupiterOrbitAngle = randAngle();
+  saturnOrbitAngle = randAngle();
+  uranusOrbitAngle = randAngle();
+  neptuneOrbitAngle = randAngle();
+  plutoOrbitAngle = randAngle();
+  moonOrbitAngle = randAngle();
+
   // create scene objects
-  // auto cube1 = scene.createObject("Cube1", cubeMesh);
-  // cube1->transform.position = vec3(0.0f, 0.0f, -2.0f);
-  // cube1->transform.scale = vec3(0.5f, 0.3f, 0.5f);
-
-  // auto torus1 = scene.createObject("Torus1", torusMesh);
-  // torus1->transform.position = vec3(2.0f, 1.0f, -4.0f);
-  // torus1->transform.scale = vec3(0.5f);
-  // torus1->textureId = donutTex;
-
-  float sizeScale = 5.0f;
-  float positionScale = 10.0f;
-
   auto sun = scene.createObject("sun", sphereMesh);
-  sun->transform.position = vec3(0.0f, 0.0f, 0.0f) * positionScale;
+  sun->transform.position = vec3(0.0f);
   sun->transform.scale = vec3(5.0f) * sizeScale;
   sun->textureId = sunTex;
 
   auto mercury = scene.createObject("mercury", sphereMesh);
-  mercury->transform.position = vec3(6.0f, 0.0f, 0.0f) * positionScale;
+  setPlanetInitialPosition(mercury.get(), mercuryRadius, mercuryOrbitAngle);
   mercury->transform.scale = vec3(0.2f) * sizeScale;
   mercury->textureId = mercuryTex;
 
   auto venus = scene.createObject("venus", sphereMesh);
-  venus->transform.position = vec3(10.0f, 0.0f, 0.0f) * positionScale;
+  setPlanetInitialPosition(venus.get(), venusRadius, venusOrbitAngle);
   venus->transform.scale = vec3(0.4f) * sizeScale;
   venus->textureId = venusTex;
 
   auto earth = scene.createObject("earth", sphereMesh);
-  earth->transform.position = vec3(14.0f, 0.0f, 0.0f) * positionScale;
+  setPlanetInitialPosition(earth.get(), earthRadius, earthOrbitAngle);
   earth->transform.scale = vec3(0.45f) * sizeScale;
   earth->textureId = earthTex;
 
   auto mars = scene.createObject("mars", sphereMesh);
-  mars->transform.position = vec3(18.0f, 0.0f, 0.0f) * positionScale;
+  setPlanetInitialPosition(mars.get(), marsRadius, marsOrbitAngle);
   mars->transform.scale = vec3(0.3f) * sizeScale;
   mars->textureId = marsTex;
 
   auto jupiter = scene.createObject("jupiter", sphereMesh);
-  jupiter->transform.position = vec3(35.0f, 0.0f, 0.0f) * positionScale;
+  setPlanetInitialPosition(jupiter.get(), jupiterRadius, jupiterOrbitAngle);
   jupiter->transform.scale = vec3(2.5f) * sizeScale;
   jupiter->textureId = jupiterTex;
 
   auto saturn = scene.createObject("saturn", sphereMesh);
-  saturn->transform.position = vec3(55.0f, 0.0f, 0.0f) * positionScale;
+  setPlanetInitialPosition(saturn.get(), saturnRadius, saturnOrbitAngle);
   saturn->transform.scale = vec3(2.2f) * sizeScale;
   saturn->textureId = saturnTex;
 
   auto uranus = scene.createObject("uranus", sphereMesh);
-  uranus->transform.position = vec3(75.0f, 0.0f, 0.0f) * positionScale;
+  setPlanetInitialPosition(uranus.get(), uranusRadius, uranusOrbitAngle);
   uranus->transform.scale = vec3(1.0f) * sizeScale;
   uranus->textureId = uranusTex;
 
   auto neptune = scene.createObject("neptune", sphereMesh);
-  neptune->transform.position = vec3(95.0f, 0.0f, 0.0f) * positionScale;
+  setPlanetInitialPosition(neptune.get(), neptuneRadius, neptuneOrbitAngle);
   neptune->transform.scale = vec3(1.0f) * sizeScale;
   neptune->textureId = neptuneTex;
 
   auto pluto = scene.createObject("pluto", sphereMesh);
-  pluto->transform.position = vec3(110.0f, 0.0f, 0.0f) * positionScale;
+  setPlanetInitialPosition(pluto.get(), plutoRadius, plutoOrbitAngle);
   pluto->transform.scale = vec3(0.1f) * sizeScale;
   pluto->textureId = plutoTex;
 
+  vec3 initialEarthPos = earth->transform.position;
+
   auto moon = scene.createObject("moon", sphereMesh);
-  moon->transform.position = vec3(14.8f, 0.0f, 0.0f) * positionScale;
+  moon->transform.position.x =
+      initialEarthPos.x + moonRadius * glm::cos(moonOrbitAngle);
+  moon->transform.position.z =
+      initialEarthPos.z + moonRadius * glm::sin(moonOrbitAngle);
+  moon->transform.position.y = 0.0f;
   moon->transform.scale = vec3(0.08f) * sizeScale;
   moon->textureId = moonTex;
-
-  // auto car =
-  //    ObjectLoader::loadOBJObject("Car.obj", vec4(0.0f, 0.0f, 0.0f, 1.0f));
-  // scene.addObject(car);
-  // car->transform.position = vec3(10.0f, 0.0f, -10.0f);
 }
 
 int main() {
