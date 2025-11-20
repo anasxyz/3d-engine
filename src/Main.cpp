@@ -9,8 +9,9 @@
 #include "../include/MeshFactory.h"
 #include "../include/ObjectLoader.h"
 #include "../include/Scene.h"
-#include "../include/TextureLoader.h"
 #include "../include/Skybox.h"
+#include "../include/TextureLoader.h"
+#include "../include/UIManager.h"
 
 #include "../external/imgui/imgui.h"
 #include "../external/imgui/imgui_impl_glfw.h"
@@ -59,7 +60,9 @@ float specularStrength = 0.1f;
 // scene
 Scene scene;
 // skybox
-Skybox* skybox;
+Skybox *skybox;
+// UI manager
+UIManager ui;
 
 // rotation speeds
 float rotSpeed = 0.2f;
@@ -94,9 +97,18 @@ void updateObjectMovement(Object &obj) {
 void render() {
   GLFWwindow *window = glw->window();
 
+  // fps calculation
+  static float fps = 60.0f;
+  float currentFrameTime = glfwGetTime();
+  deltaTime = currentFrameTime - lastFrameTime;
+  lastFrameTime = currentFrameTime;
+  const float alpha = 0.05f;
+  fps = fps * (1.0f - alpha) + (1.0f / deltaTime) * alpha;
+
   bool hPressed = glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS;
   float currentTime = glfwGetTime();
 
+  // ui stuff
   if (hPressed && !hPressedLastFrame &&
       (currentTime - lastToggleTime) > toggleCooldown) {
     showControls = !showControls;
@@ -104,62 +116,12 @@ void render() {
   }
   hPressedLastFrame = hPressed;
 
-  static float fps = 60.0f;
-  float currentFrameTime = glfwGetTime();
-  deltaTime = currentFrameTime - lastFrameTime;
-  lastFrameTime = currentFrameTime;
-  const float alpha = 0.1f;
-  fps = fps * (1.0f - alpha) + (1.0f / deltaTime) * alpha;
+  ui.beginFrame();
+  ui.renderFPS(fps);
+	ui.renderControls(showControls);
+  ui.endFrame();
 
-  ImGui_ImplOpenGL3_NewFrame();
-  ImGui_ImplGlfw_NewFrame();
-  ImGui::NewFrame();
-
-  ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
-  ImGui::Begin("FPS", nullptr,
-               ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize |
-                   ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-                   ImGuiWindowFlags_NoBackground);
-
-  ImGui::SetWindowFontScale(2.0f);
-  ImGui::Text("FPS: %.1f", fps);
-
-  ImGui::Dummy(ImVec2(0.0f, 10.0f));
-
-  if (!showControls) {
-    ImGui::TextColored(ImVec4(1, 1, 0, 1), "Press H for controls");
-  }
-
-  ImGui::End();
-
-  if (showControls) {
-    ImGui::SetNextWindowPos(ImVec2(10, 60), ImGuiCond_Always);
-    ImGui::Begin("Controls", nullptr,
-                 ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize |
-                     ImGuiWindowFlags_NoMove);
-
-    ImGui::SetWindowFontScale(2.0f);
-
-    ImGui::Text("Camera Controls:");
-    ImGui::Text("WASD: move forward/backward/left/right");
-    ImGui::Text("Space / Left Shift: move up/down");
-    ImGui::Text("Arrow keys: look around");
-
-    ImGui::Dummy(ImVec2(0.0f, 10.0f));
-
-    ImGui::Text("Control Crate (cube):");
-    ImGui::Text("U / O / P: rotate X / Y / Z");
-    ImGui::Text("I / K: move up/down (Y axis)");
-    ImGui::Text("J / L: move left/right (X axis)");
-    ImGui::Text("N / M: move forward/backward (Z axis)");
-
-    ImGui::Dummy(ImVec2(0.0f, 10.0f));
-
-    ImGui::Text("Press H: toggle this menu");
-
-    ImGui::End();
-  }
-
+  // clear background
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -174,7 +136,7 @@ void render() {
   camera.processCameraLook(window, deltaTime);
   glm::mat4 view = camera.getViewMatrix();
 
-	skybox->render(view, projection);
+  skybox->render(view, projection);
 
   glUseProgram(program);
 
@@ -228,12 +190,13 @@ void initImGui() {
 }
 
 void init() {
-  // init imgui
-  initImGui();
+  // init ui
+  ui.init(glw->window());
 
-  // load shaders
+  // load main shaders
   program = glw->loadShader("shaders/vs.vert", "shaders/fs.frag");
 
+  // skybox
   std::vector<std::string> faces;
   faces.push_back("space2/px.png"); // +X
   faces.push_back("space2/nx.png"); // -X
@@ -241,8 +204,8 @@ void init() {
   faces.push_back("space2/ny.png"); // -Y
   faces.push_back("space2/pz.png"); // +Z
   faces.push_back("space2/nz.png"); // -Z
-	
-	skybox = new Skybox(glw, faces);
+
+  skybox = new Skybox(glw, faces);
 
   modelId = glGetUniformLocation(program, "model");
   viewId = glGetUniformLocation(program, "view");
@@ -288,6 +251,7 @@ void init() {
   scene.addObject(car);
   car->transform.position = vec3(10.0f, 0.0f, -10.0f);
 }
+
 int main() {
   try {
     glw = new GLWrapper(windowWidth, windowHeight, "Project");
