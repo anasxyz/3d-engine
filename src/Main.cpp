@@ -52,8 +52,8 @@ Camera camera(vec3(50.0f, 0.0f, 50.0f));
 // lighting
 vec3 lightPosition(0.0f, 0.0f, 0.0f);
 vec3 lightColour(1.0f, 1.0f, 1.0f); // white
-float ambientStrength = 0.1f;
-float shininess = 100.0f;
+float ambientStrength = 0.15f;
+float shininess = 1.0f;
 float specularStrength = 0.1f;
 
 // scene
@@ -151,11 +151,11 @@ void render() {
 
   for (auto &obj : scene.objects) {
     glUniformMatrix4fv(modelId, 1, GL_FALSE, &obj->transform.getMatrix()[0][0]);
-		
-		// if current object is the sun
-		bool isSun = (obj->name == "sun");
-		// set uniform flagg
-		glUniform1i(isLightSourceId, isSun ? 1 : 0);
+
+    // if current object is the sun
+    bool isSun = (obj->name == "sun");
+    // set uniform flagg
+    glUniform1i(isLightSourceId, isSun ? 1 : 0);
 
     if (obj->textureId != 0) {
       glActiveTexture(GL_TEXTURE0);
@@ -251,64 +251,62 @@ void init() {
   // torus1->transform.scale = vec3(0.5f);
   // torus1->textureId = donutTex;
 
-  // Set up the Sun (Center of the solar system, large size)
+  float sizeScale = 5.0f;
+  float positionScale = 10.0f;
+
   auto sun = scene.createObject("sun", sphereMesh);
-  sun->transform.position =
-      vec3(0.0f, 0.0f, 0.0f);        // Sun is at the origin (0, 0, 0)
-  sun->transform.scale = vec3(5.0f); // Make the sun significantly larger
+  sun->transform.position = vec3(0.0f, 0.0f, 0.0f) * positionScale;
+  sun->transform.scale = vec3(5.0f) * sizeScale;
   sun->textureId = sunTex;
 
-  // --- Inner Planets (Rocky, relatively small and close) ---
-
   auto mercury = scene.createObject("mercury", sphereMesh);
-  mercury->transform.position = vec3(6.0f, 0.0f, 0.0f); // Closer to the sun
-  mercury->transform.scale = vec3(0.2f);                // Smallest planet
+  mercury->transform.position = vec3(6.0f, 0.0f, 0.0f) * positionScale;
+  mercury->transform.scale = vec3(0.2f) * sizeScale;
   mercury->textureId = mercuryTex;
 
   auto venus = scene.createObject("venus", sphereMesh);
-  venus->transform.position = vec3(10.0f, 0.0f, 0.0f);
-  venus->transform.scale = vec3(0.4f);
+  venus->transform.position = vec3(10.0f, 0.0f, 0.0f) * positionScale;
+  venus->transform.scale = vec3(0.4f) * sizeScale;
   venus->textureId = venusTex;
 
   auto earth = scene.createObject("earth", sphereMesh);
-  earth->transform.position = vec3(14.0f, 0.0f, 0.0f);
-  earth->transform.scale = vec3(0.45f);
+  earth->transform.position = vec3(14.0f, 0.0f, 0.0f) * positionScale;
+  earth->transform.scale = vec3(0.45f) * sizeScale;
   earth->textureId = earthTex;
 
   auto mars = scene.createObject("mars", sphereMesh);
-  mars->transform.position = vec3(18.0f, 0.0f, 0.0f);
-  mars->transform.scale = vec3(0.3f);
+  mars->transform.position = vec3(18.0f, 0.0f, 0.0f) * positionScale;
+  mars->transform.scale = vec3(0.3f) * sizeScale;
   mars->textureId = marsTex;
 
   auto jupiter = scene.createObject("jupiter", sphereMesh);
-  jupiter->transform.position = vec3(35.0f, 0.0f, 0.0f);
-  jupiter->transform.scale = vec3(2.5f);
+  jupiter->transform.position = vec3(35.0f, 0.0f, 0.0f) * positionScale;
+  jupiter->transform.scale = vec3(2.5f) * sizeScale;
   jupiter->textureId = jupiterTex;
 
   auto saturn = scene.createObject("saturn", sphereMesh);
-  saturn->transform.position = vec3(55.0f, 0.0f, 0.0f);
-  saturn->transform.scale = vec3(2.2f);
+  saturn->transform.position = vec3(55.0f, 0.0f, 0.0f) * positionScale;
+  saturn->transform.scale = vec3(2.2f) * sizeScale;
   saturn->textureId = saturnTex;
 
   auto uranus = scene.createObject("uranus", sphereMesh);
-  uranus->transform.position = vec3(75.0f, 0.0f, 0.0f);
-  uranus->transform.scale = vec3(1.0f);
+  uranus->transform.position = vec3(75.0f, 0.0f, 0.0f) * positionScale;
+  uranus->transform.scale = vec3(1.0f) * sizeScale;
   uranus->textureId = uranusTex;
 
   auto neptune = scene.createObject("neptune", sphereMesh);
-  neptune->transform.position = vec3(95.0f, 0.0f, 0.0f);
-  neptune->transform.scale = vec3(1.0f);
+  neptune->transform.position = vec3(95.0f, 0.0f, 0.0f) * positionScale;
+  neptune->transform.scale = vec3(1.0f) * sizeScale;
   neptune->textureId = neptuneTex;
 
   auto pluto = scene.createObject("pluto", sphereMesh);
-  pluto->transform.position = vec3(110.0f, 0.0f, 0.0f);
-
-  pluto->transform.scale = vec3(0.1f);
+  pluto->transform.position = vec3(110.0f, 0.0f, 0.0f) * positionScale;
+  pluto->transform.scale = vec3(0.1f) * sizeScale;
   pluto->textureId = plutoTex;
 
   auto moon = scene.createObject("moon", sphereMesh);
-  moon->transform.position = vec3(14.5f, 0.0f, 0.0f);
-  moon->transform.scale = vec3(0.08f);
+  moon->transform.position = vec3(14.8f, 0.0f, 0.0f) * positionScale;
+  moon->transform.scale = vec3(0.08f) * sizeScale;
   moon->textureId = moonTex;
 
   // auto car =
